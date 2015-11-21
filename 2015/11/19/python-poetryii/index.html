@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Generating Poetry with Python, pt. II | Cameron&#39;s Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="In the introduction, we went over some basics of Markov chains, an implementation in Python, and a small app that utilizes it. Here, we’ll get into some of the actual code that makes the app I made wi">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Generating Poetry with Python, pt. II">
+<meta property="og:url" content="http://cameronsima.github.io/2015/11/19/python-poetryii/index.html">
+<meta property="og:site_name" content="Cameron's Blog">
+<meta property="og:description" content="In the introduction, we went over some basics of Markov chains, an implementation in Python, and a small app that utilizes it. Here, we’ll get into some of the actual code that makes the app I made wi">
+<meta property="og:updated_time" content="2015-11-19T16:15:29.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Generating Poetry with Python, pt. II">
+<meta name="twitter:description" content="In the introduction, we went over some basics of Markov chains, an implementation in Python, and a small app that utilizes it. Here, we’ll get into some of the actual code that makes the app I made wi">
+  
+    <link rel="alternative" href="/atom.xml" title="Cameron&#39;s Blog" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+  <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Cameron&#39;s Blog</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">Programming and Stuff</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://cameronsima.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-python-poetryii" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/11/19/python-poetryii/" class="article-date">
+  <time datetime="2015-11-19T16:15:29.000Z" itemprop="datePublished">11-19-2015</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Generating Poetry with Python, pt. II
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>In the <a href="http://cameronsima.github.io/2015/11/16/python-poetryi/">introduction</a>, we went over some basics of Markov chains, an implementation in Python, and a small app that utilizes it. Here, we’ll get into some of the actual code that makes the app I made with it, <a href="http://www.wordsmith.es/poetry_generator/" target="_blank" rel="external">Pastiche</a>, tick.</p>
+<p>The Python Markov chain object, contained in file <code>markov.py</code>, is based heavily on an example found on the <a href="http://agiliq.com/blog/" target="_blank" rel="external">Agiliq Blog</a>. </p>
+<a id="more"></a> 
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">class Markov(object):</span><br><span class="line"></span><br><span class="line"> def __init__(self, open_file):</span><br><span class="line">	  self.cache = &#123;&#125;</span><br><span class="line">	  self.words = open_file.split()</span><br><span class="line">	  self.word_size = len(self.words)</span><br><span class="line">	  self.database()</span><br><span class="line">	</span><br><span class="line">  def triples(self):</span><br><span class="line">	  <span class="keyword">if</span> len(self.words) &lt; <span class="number">3</span>:</span><br><span class="line">		  <span class="built_in">return</span>	</span><br><span class="line">	  <span class="keyword">for</span> i <span class="keyword">in</span> range(len(self.words) - <span class="number">2</span>):</span><br><span class="line">		  yield (self.words[i], self.words[i+<span class="number">1</span>], self.words[i+<span class="number">2</span>])</span><br><span class="line">			</span><br><span class="line">  def database(self):</span><br><span class="line">	  <span class="keyword">for</span> w1, w2, w3 <span class="keyword">in</span> self.triples():</span><br><span class="line">		  key = (w1, w2)</span><br><span class="line">		  <span class="keyword">if</span> key <span class="keyword">in</span> self.cache:</span><br><span class="line">			  self.cache[key].append(w3)</span><br><span class="line">		  <span class="keyword">else</span>:</span><br><span class="line">			  self.cache[key] = [w3]</span><br><span class="line">				</span><br><span class="line">  def generate_markov_text(self, size=<span class="number">30</span>):</span><br><span class="line">	  seed = random.randint(<span class="number">0</span>, self.word_size-<span class="number">3</span>)</span><br><span class="line">	  seed_word, next_word = self.words[seed], self.words[seed+<span class="number">1</span>]</span><br><span class="line">	  w1, w2 = seed_word, next_word</span><br><span class="line">	  gen_words = []</span><br><span class="line"></span><br><span class="line">	  <span class="keyword">for</span> i <span class="keyword">in</span> xrange(size):</span><br><span class="line">		  gen_words.append(w1)</span><br><span class="line">			</span><br><span class="line">		  w1, w2 = w2, random.choice(self.cache[(w1, w2)])</span><br><span class="line">	  gen_words.append(w2)</span><br><span class="line">	  self.text = <span class="string">' '</span>.join(gen_words)</span><br><span class="line">	  <span class="built_in">return</span> self.text</span><br></pre></td></tr></table></figure>
+<p>Next, we’ll make a small <code>app.py</code> file using <a href="http://bottlepy.org/docs/dev/index.html" target="_blank" rel="external">Bottle.py</a>, a great web micro-framework for Python. To use the framework, you simply need to download <a href="https://raw.githubusercontent.com/bottlepy/bottle/master/bottle.py" target="_blank" rel="external">bottle.py</a> into your project directory.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">from bottle import route, run, template, get, post, redirect, request, TEMPLATE_PATH, static_file</span><br><span class="line"></span><br><span class="line">import markov</span><br><span class="line"></span><br><span class="line">STATIC_ROOT = <span class="string">'/path/to/project/static'</span></span><br><span class="line">TEMPLATE_PATH.insert(<span class="number">0</span>, os.path.abspath(os.path.join(os.path.dirname(__file__), <span class="string">"views"</span>)))</span><br><span class="line"></span><br><span class="line">@route(<span class="string">'/static/&lt;filename&gt;'</span>)</span><br><span class="line">def server_static(filename):</span><br><span class="line">    <span class="built_in">return</span> static_file(filename, root=STATIC_ROOT)</span><br><span class="line"></span><br><span class="line">@get(<span class="string">'/'</span>)</span><br><span class="line">def page():</span><br><span class="line">    try:</span><br><span class="line">        <span class="built_in">return</span> template(<span class="string">'mainPage'</span>, poem=poem)</span><br><span class="line">    except:</span><br><span class="line">        <span class="built_in">return</span> template(<span class="string">'mainPage'</span>, poem=<span class="string">"Oops...Something went wrong. Please try again!"</span>)</span><br><span class="line"></span><br><span class="line">@post(<span class="string">'/'</span>)</span><br><span class="line">def enter_score():</span><br><span class="line">    global poem</span><br><span class="line">    poem = markov.write(request.forms)</span><br><span class="line">    redirect(<span class="string">'/'</span>)</span><br><span class="line"></span><br><span class="line">run(host=<span class="string">'localhost'</span>, port=<span class="number">8080</span>, debug=True)</span><br></pre></td></tr></table></figure>
+<p>The important thing to note here is that Bottle will receive POST requests from the client from the <code>@post(&#39;/&#39;)</code> function via <code>requests.forms</code>, which will return a list of poets’ names selected  by the user.</p>
+<p>Finally, we’ll pass <code>requests.forms</code> to our <code>write()</code> function, which we’ll now add to <code>markov.py</code>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">FILENAME_PREFIX = <span class="string">'/path/to/project/'</span></span><br><span class="line">...</span><br><span class="line">def write(poets):</span><br><span class="line">	<span class="keyword">if</span> not poets:</span><br><span class="line">		<span class="built_in">return</span> <span class="string">"Please select at least one poet!"</span></span><br><span class="line">	combined_text = <span class="string">''</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> poet <span class="keyword">in</span> poets:</span><br><span class="line">		fname = FILENAME_PREFIX + poet + <span class="string">'.txt'</span></span><br><span class="line">		<span class="keyword">for</span> line <span class="keyword">in</span> open(fname):</span><br><span class="line">			combined_text += line</span><br><span class="line">	</span><br><span class="line">	markov = Markov(combined_text)</span><br><span class="line">	combined_text = <span class="string">''</span></span><br><span class="line">	markov.generate_markov_text()</span><br><span class="line">	<span class="built_in">return</span> markov.text</span><br></pre></td></tr></table></figure>
+<p>If the user hasn’t selected any names and <code>request.forms</code> is empty, we ask the user to select at least one poet. For each of the names in <code>poets</code>, we open the <code>.txt</code> file containing their works line by line, and add the lines to string <code>combined_text</code>. We instantiate a new <code>Markov</code> object, passing in <code>combined_text</code>, then call the <code>generate_markov_text()</code> method to get our line of poetry.</p>
+<p>The <a href="https://github.com/CameronSima/python_poetry_generator" target="_blank" rel="external">complete project</a> contains functions for formatting, scraping the web for additional texts, and a basic front-end layout using Bootstrap. Eventually, I will add a database where users can save lines that come out particulary well, as well as a voting system.</p>
+<h3 id="Links:">Links:</h3><p><a href="http://wordsmith.es/poetry_generator" target="_blank" rel="external">Live Example</a><br><a href="https://github.com/CameronSima/python_poetry_generator" target="_blank" rel="external">Full Project Code</a></p>
+<h3 id="Read_Part_I"><a href="http://cameronsima.github.io/2015/11/16/python-poetryi/">Read Part I</a></h3>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://cameronsima.github.io/2015/11/19/python-poetryii/" data-id="cih6fhefv0003uhh0yf03knoz" class="article-share-link">Share</a>
+      
+        <a href="http://cameronsima.github.io/2015/11/19/python-poetryii/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Python/">Python</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2015/11/19/python-poetryi/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Generating Poetry with Python, pt. I</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2015/11/19/python-poetryii/">Generating Poetry with Python, pt. II</a>
+          </li>
+        
+          <li>
+            <a href="/2015/11/19/python-poetryi/">Generating Poetry with Python, pt. I</a>
+          </li>
+        
+          <li>
+            <a href="/2015/11/18/Node-js/">Building a Real-time Web Game with Node.js, Express, and Socket.io</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/11/">November 2015</a><span class="archive-list-count">3</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Node-js/">Node.js</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/">Python</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2015 Cameron Sima<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'cameronsima';
+  
+  var disqus_url = 'http://cameronsima.github.io/2015/11/19/python-poetryii/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css" type="text/css">
+  <script src="/fancybox/jquery.fancybox.pack.js" type="text/javascript"></script>
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+  </div>
+</body>
+</html>
